@@ -3,7 +3,7 @@
 
 # ENV['VAGRANT_NO_PARALLEL'] = 'yes'
 
-VAGRANT_BOX         = "ubuntu/focal64"
+VAGRANT_BOX         = "generic/ubuntu2204"
 CPU_NODE            = 1
 MEMORY_NODE         = 1024
 WORKER_NODES_COUNT  = 2
@@ -20,12 +20,6 @@ Vagrant.configure(2) do |config|
     node.vm.hostname          = "core.funless.dev"
 
     node.vm.network "private_network", ip: "192.168.56.100"
-  
-    node.vm.provider :virtualbox do |v|
-      v.name    = "core"
-      v.memory  = MEMORY_NODE
-      v.cpus    = CPU_NODE
-    end
   
     node.vm.provider :libvirt do |v|
       v.memory  = MEMORY_NODE
@@ -48,12 +42,6 @@ Vagrant.configure(2) do |config|
       node.vm.hostname          = "worker#{i}.funless.dev"
 
       node.vm.network "private_network", ip: "192.168.56.10#{i}"
-
-      node.vm.provider :virtualbox do |v|
-        v.name    = "worker#{i}"
-        v.memory  = MEMORY_NODE
-        v.cpus    = CPU_NODE
-      end
 
       node.vm.provider :libvirt do |v|
         v.memory  = MEMORY_NODE
