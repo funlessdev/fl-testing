@@ -1,4 +1,4 @@
-package api
+package sdk
 
 import (
 	swagger "github.com/funlessdev/fl-client-sdk-go"
