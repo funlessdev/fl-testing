@@ -32,6 +32,7 @@ func (suite *SDKTestSuite) SetupSuite() {
 	if host == "" {
 		suite.T().Skip("set FL_TEST_HOST to run this test")
 	}
+
 	suite.ctx = context.Background()
 	suite.fnName = "hellojs"
 	suite.fnNamespace = "helloNS"
@@ -112,7 +113,7 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 		suite.Equal("{\"payload\":\"Hello World!\"}", string(decodedResult))
 	})
 
-	//delete function
+	// delete function
 	suite.Run("should successfully delete function", func() {
 		result, _, err := suite.fnClient.DefaultApi.DeletePost(suite.ctx, swagger.FunctionDeletion{
 			Name:      suite.fnName,
@@ -124,7 +125,63 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 }
 
 func (suite *SDKTestSuite) TestInvocationFailure() {
+	// invocation before creation
+	suite.Run("should return an error when invoking a function before creating it", func() {
+		_, _, err := suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
+			Function:  suite.fnName,
+			Namespace: suite.fnNamespace,
+			Args:      &suite.fnArgs,
+		})
 
+		suite.Error(err)
+		suite.Equal("Failed to invoke function: function not found in given namespace", sdk.ExtractError(err).Error())
+	})
+
+	// invocation on wrong namespace
+	suite.Run("should return an error when invoking a function in the wrong namespace", func() {
+		_, _, err := suite.fnClient.DefaultApi.CreatePost(suite.ctx, swagger.FunctionCreation{
+			Name:      suite.fnName,
+			Namespace: suite.fnNamespace,
+			Code:      suite.fnCode,
+			Image:     suite.fnImage,
+		})
+		suite.NoError(err)
+
+		_, _, err = suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
+			Function:  suite.fnName,
+			Namespace: suite.fnNamespace + "_",
+			Args:      &suite.fnArgs,
+		})
+
+		suite.Error(err)
+		suite.Equal("Failed to invoke function: function not found in given namespace", sdk.ExtractError(err).Error())
+	})
+
+	// invocation after deletion
+	suite.Run("should return an error when invoking a function after deleting it", func() {
+		_, _, err := suite.fnClient.DefaultApi.CreatePost(suite.ctx, swagger.FunctionCreation{
+			Name:      suite.fnName,
+			Namespace: suite.fnNamespace,
+			Code:      suite.fnCode,
+			Image:     suite.fnImage,
+		})
+		suite.NoError(err)
+
+		_, _, err = suite.fnClient.DefaultApi.DeletePost(suite.ctx, swagger.FunctionDeletion{
+			Name:      suite.fnName,
+			Namespace: suite.fnNamespace,
+		})
+		suite.NoError(err)
+
+		_, _, err = suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
+			Function:  suite.fnName,
+			Namespace: suite.fnNamespace,
+			Args:      &suite.fnArgs,
+		})
+
+		suite.Error(err)
+		suite.Equal("Failed to invoke function: function not found in given namespace", sdk.ExtractError(err).Error())
+	})
 }
 
 func TestSDKSuite(t *testing.T) {
