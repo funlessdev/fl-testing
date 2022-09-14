@@ -94,12 +94,15 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 			Namespace: suite.fnNamespace,
 			Args:      &suite.fnArgs,
 		})
-		name := suite.fnArgs.(map[string]string)["name"]
-		decodedResult, jErr := json.Marshal(*result.Result)
-
 		suite.NoError(err)
-		suite.NoError(jErr)
-		suite.Equal(`{"payload":"Hello `+name+`!"}`, string(decodedResult))
+
+		if result.Result != nil {
+			name := suite.fnArgs.(map[string]string)["name"]
+			decodedResult, jErr := json.Marshal(*result.Result)
+
+			suite.NoError(jErr)
+			suite.Equal(`{"payload":"Hello `+name+`!"}`, string(decodedResult))
+		}
 
 	})
 	suite.Run("should return the correct result when invoking hellojs with args", func() {
@@ -107,11 +110,13 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 			Function:  suite.fnName,
 			Namespace: suite.fnNamespace,
 		})
-		decodedResult, jErr := json.Marshal(*result.Result)
-
 		suite.NoError(err)
-		suite.NoError(jErr)
-		suite.Equal(`{"payload":"Hello World!"}`, string(decodedResult))
+
+		if result.Result != nil {
+			decodedResult, jErr := json.Marshal(*result.Result)
+			suite.NoError(jErr)
+			suite.Equal(`{"payload":"Hello World!"}`, string(decodedResult))
+		}
 	})
 
 	//delete function
