@@ -64,12 +64,37 @@ func (suite *HTTPTestSuite) TearDownSuite() {
 	_ = cli.DestroyDev(suite.ctx, suite.deployer)
 }
 
+func (suite *HTTPTestSuite) CreateFunction() (*http.Response, error) {
+	createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace, "code": suite.fnCode, "image": suite.fnImage}
+	jsonBody, _ := json.Marshal(createBody)
+	response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+	return response, err
+}
+
+func (suite *HTTPTestSuite) DeleteFunction() (*http.Response, error) {
+	deleteBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace}
+	jsonBody, _ := json.Marshal(deleteBody)
+	response, err := http.Post(suite.fnHost+"/delete", "application/json", bytes.NewBuffer(jsonBody))
+	return response, err
+}
+
+func (suite *HTTPTestSuite) InvokeFunction() (*http.Response, error) {
+	invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
+	jsonBody, _ := json.Marshal(invokeBody)
+	response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+	return response, err
+}
+
+func (suite *HTTPTestSuite) InvokeFunctionWithArgs(args string) (*http.Response, error) {
+	invokeBody := fmt.Sprintf(`{"function": "%s", "namespace": "%s", "args": %s}`, suite.fnName, suite.fnNamespace, args)
+	response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer([]byte(invokeBody)))
+	return response, err
+}
+
 func (suite *HTTPTestSuite) TestInvocationSuccess() {
 	// create function
 	suite.Run("should successfully create function", func() {
-		createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace, "code": suite.fnCode, "image": suite.fnImage}
-		jsonBody, _ := json.Marshal(createBody)
-		response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.CreateFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
@@ -83,17 +108,12 @@ func (suite *HTTPTestSuite) TestInvocationSuccess() {
 
 	// invoke function
 	suite.Run("should return no error when invoking an existing function", func() {
-		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ := json.Marshal(invokeBody)
-		response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
-
+		response, err := suite.InvokeFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 	})
 	suite.Run("should return the correct result when invoking hellojs with no args", func() {
-		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ := json.Marshal(invokeBody)
-		response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.InvokeFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
@@ -107,8 +127,7 @@ func (suite *HTTPTestSuite) TestInvocationSuccess() {
 	})
 	suite.Run("should return the correct result when invoking hellojs with args", func() {
 		jsonArgs, _ := json.Marshal(suite.fnArgs)
-		invokeBody := fmt.Sprintf(`{"function": "%s", "namespace": "%s", "args": %s}`, suite.fnName, suite.fnNamespace, string(jsonArgs))
-		response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer([]byte(invokeBody)))
+		response, err := suite.InvokeFunctionWithArgs(string(jsonArgs))
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
@@ -122,9 +141,7 @@ func (suite *HTTPTestSuite) TestInvocationSuccess() {
 
 	//delete function
 	suite.Run("should successfully delete function", func() {
-		deleteBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ := json.Marshal(deleteBody)
-		response, err := http.Post(suite.fnHost+"/delete", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.DeleteFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
@@ -140,9 +157,7 @@ func (suite *HTTPTestSuite) TestInvocationSuccess() {
 func (suite *HTTPTestSuite) TestInvocationFailure() {
 	// invocation before creation
 	suite.Run("should return an error when invoking a function before creating it", func() {
-		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ := json.Marshal(invokeBody)
-		response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.InvokeFunction()
 
 		suite.NoError(err)
 		suite.Equal(404, response.StatusCode)
@@ -155,14 +170,12 @@ func (suite *HTTPTestSuite) TestInvocationFailure() {
 
 	// invocation on wrong namespace
 	suite.Run("should return an error when invoking a function in the wrong namespace", func() {
-		createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace + "_", "code": suite.fnCode, "image": suite.fnImage}
-		jsonBody, _ := json.Marshal(createBody)
-		response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.CreateFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
-		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ = json.Marshal(invokeBody)
+		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace + "_"}
+		jsonBody, _ := json.Marshal(invokeBody)
 		response, err = http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
 
 		suite.NoError(err)
@@ -176,22 +189,15 @@ func (suite *HTTPTestSuite) TestInvocationFailure() {
 
 	// invocation after deletion
 	suite.Run("should return an error when invoking a function after deleting it", func() {
-		createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace, "code": suite.fnCode, "image": suite.fnImage}
-		jsonBody, _ := json.Marshal(createBody)
-		response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+		response, err := suite.CreateFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
-		deleteBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ = json.Marshal(deleteBody)
-		response, err = http.Post(suite.fnHost+"/delete", "application/json", bytes.NewBuffer(jsonBody))
+		response, err = suite.DeleteFunction()
 		suite.NoError(err)
 		suite.Equal(200, response.StatusCode)
 
-		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
-		jsonBody, _ = json.Marshal(invokeBody)
-		response, err = http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
-
+		response, err = suite.InvokeFunction()
 		suite.NoError(err)
 		suite.Equal(404, response.StatusCode)
 
