@@ -58,7 +58,7 @@ func (suite *SDKTestSuite) SetupSuite() {
 	_ = cli.DeployDev(suite.ctx, suite.deployer)
 
 	//wait for everything to be up
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 }
 
 func (suite *SDKTestSuite) TearDownSuite() {
@@ -77,6 +77,7 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 		suite.NoError(err)
 		suite.Equal(suite.fnName, result.Result)
 	})
+
 	// invoke function
 	suite.Run("should return no error when invoking an existing function", func() {
 		_, _, err := suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
@@ -98,7 +99,7 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 
 		suite.NoError(err)
 		suite.NoError(jErr)
-		suite.Equal("{\"payload\":\"Hello "+name+"!\"}", string(decodedResult))
+		suite.Equal(`{"payload":"Hello `+name+`!"}`, string(decodedResult))
 
 	})
 	suite.Run("should return the correct result when invoking hellojs with args", func() {
@@ -110,10 +111,10 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 
 		suite.NoError(err)
 		suite.NoError(jErr)
-		suite.Equal("{\"payload\":\"Hello World!\"}", string(decodedResult))
+		suite.Equal(`{"payload":"Hello World!"}`, string(decodedResult))
 	})
 
-	// delete function
+	//delete function
 	suite.Run("should successfully delete function", func() {
 		result, _, err := suite.fnClient.DefaultApi.DeletePost(suite.ctx, swagger.FunctionDeletion{
 			Name:      suite.fnName,
