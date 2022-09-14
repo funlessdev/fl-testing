@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 
 type HTTPTestSuite struct {
 	suite.Suite
+	deploy      bool
 	ctx         context.Context
 	deployer    deploy.DockerDeployer
 	fnName      string
@@ -29,6 +31,13 @@ type HTTPTestSuite struct {
 }
 
 func (suite *HTTPTestSuite) SetupSuite() {
+	deploy := os.Getenv("FL_TEST_DEPLOY")
+	if deploy != "" {
+		suite.deploy, _ = strconv.ParseBool(deploy)
+	} else {
+		suite.deploy = false
+	}
+
 	host := os.Getenv("FL_TEST_HOST")
 	if host == "" {
 		suite.T().Skip("set FL_TEST_HOST to run this test")
@@ -53,15 +62,19 @@ func (suite *HTTPTestSuite) SetupSuite() {
 		suite.T().Errorf("Error during docker deployer creation: %+v\n", err)
 	}
 
-	suite.deployer = deployer
-	_ = cli.DeployDev(suite.ctx, suite.deployer)
+	if suite.deploy == true {
+		suite.deployer = deployer
+		_ = cli.DeployDev(suite.ctx, suite.deployer)
 
-	//wait for everything to be up
-	time.Sleep(5 * time.Second)
+		//wait for everything to be up
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func (suite *HTTPTestSuite) TearDownSuite() {
-	_ = cli.DestroyDev(suite.ctx, suite.deployer)
+	if suite.deploy == true {
+		_ = cli.DestroyDev(suite.ctx, suite.deployer)
+	}
 }
 
 func (suite *HTTPTestSuite) CreateFunction() (*http.Response, error) {
