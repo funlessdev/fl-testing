@@ -88,7 +88,7 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 
 		suite.NoError(err)
 	})
-	suite.Run("should return the correct result when invoking hellojs with no args", func() {
+	suite.Run("should return the correct result when invoking hellojs with args", func() {
 		result, _, err := suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
 			Function:  suite.fnName,
 			Namespace: suite.fnNamespace,
@@ -105,7 +105,7 @@ func (suite *SDKTestSuite) TestInvocationSuccess() {
 		}
 
 	})
-	suite.Run("should return the correct result when invoking hellojs with args", func() {
+	suite.Run("should return the correct result when invoking hellojs with no args", func() {
 		result, _, err := suite.fnClient.DefaultApi.InvokePost(suite.ctx, swagger.FunctionInvocation{
 			Function:  suite.fnName,
 			Namespace: suite.fnNamespace,
