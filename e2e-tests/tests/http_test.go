@@ -137,6 +137,74 @@ func (suite *HTTPTestSuite) TestInvocationSuccess() {
 	})
 }
 
+func (suite *HTTPTestSuite) TestInvocationFailure() {
+	// invocation before creation
+	suite.Run("should return an error when invoking a function before creating it", func() {
+		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ := json.Marshal(invokeBody)
+		response, err := http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+
+		suite.NoError(err)
+		suite.Equal(404, response.StatusCode)
+
+		responseBody, err := io.ReadAll(response.Body)
+		suite.NoError(err)
+		expectedResult := `{"error":"Failed to invoke function: function not found in given namespace"}`
+		suite.Equal(expectedResult, string(responseBody))
+	})
+
+	// invocation on wrong namespace
+	suite.Run("should return an error when invoking a function in the wrong namespace", func() {
+		createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace + "_", "code": suite.fnCode, "image": suite.fnImage}
+		jsonBody, _ := json.Marshal(createBody)
+		response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+		suite.NoError(err)
+		suite.Equal(200, response.StatusCode)
+
+		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ = json.Marshal(invokeBody)
+		response, err = http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+
+		suite.NoError(err)
+		suite.Equal(404, response.StatusCode)
+
+		responseBody, err := io.ReadAll(response.Body)
+		suite.NoError(err)
+		expectedResult := `{"error":"Failed to invoke function: function not found in given namespace"}`
+		suite.Equal(expectedResult, string(responseBody))
+	})
+
+	// invocation after deletion
+	suite.Run("should return an error when invoking a function after deleting it", func() {
+		createBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace, "code": suite.fnCode, "image": suite.fnImage}
+		jsonBody, _ := json.Marshal(createBody)
+		response, err := http.Post(suite.fnHost+"/create", "application/json", bytes.NewBuffer(jsonBody))
+		suite.NoError(err)
+		suite.Equal(200, response.StatusCode)
+
+		deleteBody := map[string]string{"name": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ = json.Marshal(deleteBody)
+		response, err = http.Post(suite.fnHost+"/delete", "application/json", bytes.NewBuffer(jsonBody))
+		suite.NoError(err)
+		suite.Equal(200, response.StatusCode)
+
+		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ = json.Marshal(invokeBody)
+		response, err = http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+
+		suite.NoError(err)
+		suite.Equal(404, response.StatusCode)
+
+		responseBody, err := io.ReadAll(response.Body)
+		suite.NoError(err)
+		expectedResult := `{"error":"Failed to invoke function: function not found in given namespace"}`
+		suite.Equal(expectedResult, string(responseBody))
+	})
+}
+
+func (suite *HTTPTestSuite) TestHTTPOnlyInvocationFailure() {
+}
+
 func TestHTTPSuite(t *testing.T) {
 	suite.Run(t, new(HTTPTestSuite))
 }
