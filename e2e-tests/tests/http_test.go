@@ -209,6 +209,63 @@ func (suite *HTTPTestSuite) TestInvocationFailure() {
 }
 
 func (suite *HTTPTestSuite) TestHTTPOnlyInvocationFailure() {
+	// invocation with bad params
+	suite.Run("should return an error when invoking a function with bad params", func() {
+		response, err := suite.CreateFunction()
+		suite.NoError(err)
+		suite.Equal(200, response.StatusCode)
+
+		invokeBody := map[string]string{"wrongly-named-parameter": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ := json.Marshal(invokeBody)
+		response, err = http.Post(suite.fnHost+"/invoke", "application/json", bytes.NewBuffer(jsonBody))
+		suite.NoError(err)
+		suite.Equal(400, response.StatusCode)
+
+		responseBody, err := io.ReadAll(response.Body)
+		suite.NoError(err)
+
+		responseContent := string(responseBody)
+		expectedResult := `{"error":"Failed to perform operation: bad request"}`
+		suite.Equal(expectedResult, string(responseContent))
+	})
+
+	// invocation with wrong MIME type body
+	suite.Run("should return an error when invoking a function with wrong MIME type", func() {
+		invokeBody := map[string]string{"function": suite.fnName, "namespace": suite.fnNamespace}
+		jsonBody, _ := json.Marshal(invokeBody)
+		response, err := http.Post(suite.fnHost+"/invoke", "text/plain", bytes.NewBuffer(jsonBody))
+		suite.NoError(err)
+		suite.Equal(415, response.StatusCode)
+	})
+
+	// invocation with non-json body
+	// NOTE: currently fails! we return a 200, with OW error inside
+	// NOTE: OW runtime permanently stops working after a non-dictionary input is provided, breaking all other tests
+	// suite.Run("should return an error when invoking a function with non-dictionary args", func() {
+	// 	args := `"some non-dictionary string"`
+	// 	response, err := suite.InvokeFunctionWithArgs(args)
+	// 	suite.NoError(err)
+	// 	suite.Equal(400, response.StatusCode)
+	// })
+
+	// invocation with malformed json string
+	suite.Run("should return an error when invoking a function passing a malformed json string", func() {
+		args := `{"name":"Some name",,,}`
+		response, err := suite.InvokeFunctionWithArgs(args)
+		suite.NoError(err)
+		suite.Equal(400, response.StatusCode)
+
+		responseBody, err := io.ReadAll(response.Body)
+		suite.NoError(err)
+
+		responseContent := string(responseBody)
+		expectedResult := `{"error":"The provided body was not a valid JSON string"}`
+		suite.Equal(expectedResult, string(responseContent))
+
+		response, err = suite.DeleteFunction()
+		suite.NoError(err)
+		suite.Equal(200, response.StatusCode)
+	})
 }
 
 func TestHTTPSuite(t *testing.T) {
