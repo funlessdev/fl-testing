@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -29,8 +30,9 @@ func RunFLCmd(args ...string) (out string) {
 		return
 	}
 	if err = app.Run(ctx); err != nil {
+		fmt.Print(cmd[0] + ": error: " + err.Error())
 		return
 	}
 
-	return string(out)
+	return
 }
