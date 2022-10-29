@@ -46,7 +46,7 @@ func (suite *SDKTestSuite) SetupSuite() {
 	suite.fnHost = host
 
 	if suite.deploy == true {
-		cli.RunFLCmd("admin", "dev", "--core", "testcore")
+		cli.RunFLCmd("admin", "dev")
 		//wait for everything to be up
 		time.Sleep(10 * time.Second)
 	}
