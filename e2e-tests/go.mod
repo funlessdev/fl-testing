@@ -3,7 +3,7 @@ module github.com/funlessdev/fl-testing/e2e-tests
 go 1.19
 
 require (
-	github.com/funlessdev/fl-cli v0.1.1-0.20221029163629-dba764eff451
+	github.com/funlessdev/fl-cli v0.1.1-0.20221029191125-bb346f337922
 	github.com/stretchr/testify v1.8.1
 )
 
