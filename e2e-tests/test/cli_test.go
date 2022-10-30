@@ -3,6 +3,7 @@ package tests
 import (
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -78,6 +79,27 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
 		suite.Equal(suite.fnName+"\n", result)
+	})
+
+	// create function with build
+	suite.Run("should successfully build and create function", func() {
+		fn := "built"
+		ns := "ns"
+
+		// Create
+		args := []string{"fn", "create", fn, "--source-dir", "../functions/hello_rust", "--namespace", ns, "--language", "rust"}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(result, "fl: error"))
+
+		// Invoke
+		args = []string{"fn", "invoke", fn, "--namespace", ns, "-j", `{"name":"Build"}`}
+		result = cli.RunFLCmd(args...)
+		suite.Equal("{\"payload\":\"Hello Build!\"}\n", result)
+
+		// Delete
+		args = []string{"fn", "delete", fn, "--namespace", ns}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fn+"\n", result)
 	})
 }
 
