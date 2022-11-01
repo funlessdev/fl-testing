@@ -148,7 +148,7 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 	suite.Run("should return an error when deleting a function before creating it", func() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to delete function: database error because function hello-test from namespace helloNS not found", result)
+		suite.Equal("fl: error: Failed to delete function: not found", result)
 	})
 }
 
