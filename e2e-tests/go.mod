@@ -3,7 +3,7 @@ module github.com/funlessdev/fl-testing/e2e-tests
 go 1.19
 
 require (
-	github.com/funlessdev/fl-cli v0.1.1-0.20221029191125-bb346f337922
+	github.com/funlessdev/fl-cli v0.2.1
 	github.com/stretchr/testify v1.8.1
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/docker/docker v20.10.21+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/funlessdev/fl-client-sdk-go v0.0.0-20221029103504-967857536cdf // indirect
+	github.com/funlessdev/fl-client-sdk-go v0.0.0-20221031211658-3f9db5c1a8d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
