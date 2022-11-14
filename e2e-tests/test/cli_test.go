@@ -101,6 +101,55 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn+"\n", result)
 	})
+
+	// create and list functions
+	suite.Run("should successfully list created functions", func() {
+		fn1 := "hello1"
+		fn2 := "hello2"
+		ns := "ns"
+
+		// Create
+		args := []string{"fn", "create", fn1, "--source-file", "../functions/hello.wasm", "--namespace", ns, "--language", "rust", "--no-build"}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(result, "fl: error"))
+
+		args = []string{"fn", "create", fn2, "--source-file", "../functions/hello.wasm", "--namespace", ns, "--language", "rust", "--no-build"}
+		result = cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(result, "fl: error"))
+
+		// List
+		args = []string{"fn", "list", "--namespace", ns}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fn1+"\n"+fn2+"\n", result)
+
+		// List and count
+		args = []string{"fn", "list", "--namespace", ns, "--count"}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fn1+"\n"+fn2+"\nCount: 2\n", result)
+
+		// Delete
+		args = []string{"fn", "delete", fn1, "--namespace", ns}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fn1+"\n", result)
+
+		args = []string{"fn", "delete", fn2, "--namespace", ns}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fn2+"\n", result)
+	})
+
+	suite.Run("should return an empty list when no functions are found", func() {
+		ns := "ns"
+
+		// List
+		args := []string{"fn", "list", "--namespace", ns}
+		result := cli.RunFLCmd(args...)
+		suite.Equal("\n", result)
+
+		// List and count
+		args = []string{"fn", "list", "--namespace", ns, "--count"}
+		result = cli.RunFLCmd(args...)
+		suite.Equal("Count: 0\n", result)
+	})
 }
 
 func (suite *SDKTestSuite) TestOperationsFailure() {
@@ -149,6 +198,20 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
 		suite.Equal("fl: error: Failed to delete function: not found", result)
+	})
+
+	suite.Run("should return an error when listing functions in a non-existent namespace", func() {
+		ns := "WRONG"
+
+		// List
+		args := []string{"fn", "list", "--namespace", ns}
+		result := cli.RunFLCmd(args...)
+		suite.Equal("fl: error: Failed to list functions: namespace not found\n", result)
+
+		// List and count
+		args = []string{"fn", "list", "--namespace", ns, "--count"}
+		result = cli.RunFLCmd(args...)
+		suite.Equal("fl: error: Failed to list functions: namespace not found\n", result)
 	})
 }
 
