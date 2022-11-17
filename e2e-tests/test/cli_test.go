@@ -199,20 +199,6 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		result := cli.RunFLCmd(args...)
 		suite.Equal("fl: error: Failed to delete function: not found", result)
 	})
-
-	suite.Run("should return an error when listing functions in a non-existent namespace", func() {
-		ns := "WRONG"
-
-		// List
-		args := []string{"fn", "list", "--namespace", ns}
-		result := cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to list functions: namespace not found\n", result)
-
-		// List and count
-		args = []string{"fn", "list", "--namespace", ns, "--count"}
-		result = cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to list functions: namespace not found\n", result)
-	})
 }
 
 func TestSDKSuite(t *testing.T) {
