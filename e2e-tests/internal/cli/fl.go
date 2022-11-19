@@ -25,7 +25,7 @@ func RunFLCmd(args ...string) (out string) {
 	}()
 
 	// Capture stdout in w
-	ctx, err := app.ParseCMD("v0.1.0-e2e-testing")
+	ctx, err := app.ParseCMD("ve2e-testing")
 	if err != nil {
 		return
 	}

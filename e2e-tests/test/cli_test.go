@@ -22,12 +22,12 @@ type SDKTestSuite struct {
 }
 
 func (suite *SDKTestSuite) SetupSuite() {
-	host := os.Getenv("FL_TEST_HOST")
+	host := os.Getenv("HOST")
 	if host == "" {
-		suite.T().Skip("set FL_TEST_HOST to run this test")
+		suite.T().Skip("set HOST to run this test, can also set DEPLOY=true to deploy funless")
 	}
 
-	deploy := os.Getenv("FL_TEST_DEPLOY")
+	deploy := os.Getenv("DEPLOY")
 	if deploy != "" {
 		suite.deploy, _ = strconv.ParseBool(deploy)
 	} else {
@@ -60,11 +60,11 @@ func (suite *SDKTestSuite) TearDownSuite() {
 }
 
 func (suite *SDKTestSuite) TestOperationsSuccess() {
-	// create function
+	// upload function
 	suite.Run("should successfully create function", func() {
-		args := []string{"fn", "create", suite.fnName, "--source-file", "../functions/hello.wasm", "--namespace", suite.fnNamespace, "--no-build", "--language", "rust"}
+		args := []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
-		suite.Equal(suite.fnName+"\n", result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 	})
 
 	// invoke function
@@ -81,15 +81,15 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		suite.Equal(suite.fnName+"\n", result)
 	})
 
-	// create function with build
+	// create function
 	suite.Run("should successfully build and create function", func() {
 		fn := "built"
 		ns := "ns"
 
 		// Create
-		args := []string{"fn", "create", fn, "--source-dir", "../functions/hello_rust", "--namespace", ns, "--language", "rust"}
+		args := []string{"fn", "create", fn, "../functions/hello_rust", "--namespace", ns, "--language", "rust"}
 		result := cli.RunFLCmd(args...)
-		suite.False(strings.HasPrefix(result, "fl: error"))
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
 		// Invoke
 		args = []string{"fn", "invoke", fn, "--namespace", ns, "-j", `{"name":"Build"}`}
@@ -101,6 +101,20 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn+"\n", result)
 	})
+
+	// build function
+	suite.Run("should successfully build function", func() {
+		fn := "built"
+
+		// Build
+		args := []string{"fn", "build", fn, "../functions/hello_rust", "--language", "rust"}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+
+		suite.FileExists(fn + ".wasm")
+		os.Remove(fn + ".wasm")
+	})
+
 }
 
 func (suite *SDKTestSuite) TestOperationsFailure() {
@@ -108,30 +122,28 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 	suite.Run("should return an error when invoking a function before creating it", func() {
 		args := []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnNamespace, "-j", `{"name":"Test"}`}
 		result := cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", result)
+		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 	})
 
 	// invocation on wrong namespace
 	suite.Run("should return an error when invoking a function in the wrong namespace", func() {
-
 		// Create the function first
-		args := []string{"fn", "create", suite.fnName, "--source-file", "../functions/hello.wasm", "--namespace", suite.fnNamespace, "--no-build", "--language", "rust"}
+		args := []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
-		suite.Equal(suite.fnName+"\n", result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
 		// Invoke the function with a wrong namespace
 		args = []string{"fn", "invoke", suite.fnName, "--namespace", "WRONG", "-j", `{"name":"Test"}`}
 		result = cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", result)
-
+		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 	})
 
 	// invocation after deletion
 	suite.Run("should return an error when invoking a function after deleting it", func() {
 		// Create the function first
-		args := []string{"fn", "create", suite.fnName, "--source-file", "../functions/hello.wasm", "--namespace", suite.fnNamespace, "--no-build", "--language", "rust"}
+		args := []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
-		suite.Equal(suite.fnName+"\n", result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
 		// Then delete it
 		args = []string{"fn", "delete", suite.fnName, "--namespace", suite.fnNamespace}
@@ -141,17 +153,22 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		// Invoke the function
 		args = []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnNamespace, "-j", `{"name":"Test"}`}
 		result = cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", result)
+		suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 	})
 
 	// delete before creation
 	suite.Run("should return an error when deleting a function before creating it", func() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
-		suite.Equal("fl: error: Failed to delete function: not found", result)
+		suite.Equal("fl: error: Failed to delete function: not found", lastLine(result))
 	})
 }
 
 func TestSDKSuite(t *testing.T) {
 	suite.Run(t, new(SDKTestSuite))
+}
+
+func lastLine(result string) string {
+	lines := strings.Split(result, "\n")
+	return lines[len(lines)-1]
 }
