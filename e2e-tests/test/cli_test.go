@@ -104,35 +104,34 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 
 	// create and list functions
 	suite.Run("should successfully list created functions", func() {
-		fn1 := "hello1"
-		fn2 := "hello2"
-		ns := "ns"
+		fn1 := suite.fnName
+		fn2 := suite.fnName + "2"
 
 		// Create
-		args := []string{"fn", "create", fn1, "--source-file", "../functions/hello.wasm", "--namespace", ns, "--language", "rust", "--no-build"}
+		args := []string{"fn", "upload", fn1, "../functions/hello.wasm", "--namespace", suite.fnNamespace}
 		result := cli.RunFLCmd(args...)
 		suite.False(strings.HasPrefix(result, "fl: error"))
 
-		args = []string{"fn", "create", fn2, "--source-file", "../functions/hello.wasm", "--namespace", ns, "--language", "rust", "--no-build"}
+		args = []string{"fn", "upload", fn2, "../functions/hello.wasm", "--namespace", suite.fnNamespace}
 		result = cli.RunFLCmd(args...)
 		suite.False(strings.HasPrefix(result, "fl: error"))
 
 		// List
-		args = []string{"fn", "list", ns}
+		args = []string{"fn", "list", suite.fnNamespace}
 		result = cli.RunFLCmd(args...)
-		suite.Equal(fn1+"\n"+fn2+"\n", result)
+		suite.Equal(fn2+"\n"+fn1+"\n", result)
 
 		// List and count
-		args = []string{"fn", "list", ns, "--count"}
+		args = []string{"fn", "list", suite.fnNamespace, "--count"}
 		result = cli.RunFLCmd(args...)
-		suite.Equal(fn1+"\n"+fn2+"\nCount: 2\n", result)
+		suite.Equal(fn2+"\n"+fn1+"\nCount: 2\n", result)
 
 		// Delete
-		args = []string{"fn", "delete", fn1, ns}
+		args = []string{"fn", "delete", fn1, "--namespace", suite.fnNamespace}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn1+"\n", result)
 
-		args = []string{"fn", "delete", fn2, ns}
+		args = []string{"fn", "delete", fn2, "--namespace", suite.fnNamespace}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn2+"\n", result)
 	})
@@ -143,7 +142,7 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		// List
 		args := []string{"fn", "list", ns}
 		result := cli.RunFLCmd(args...)
-		suite.Equal("\n", result)
+		suite.Equal("", result)
 
 		// List and count
 		args = []string{"fn", "list", ns, "--count"}
