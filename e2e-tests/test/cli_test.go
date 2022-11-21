@@ -118,21 +118,21 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		suite.False(strings.HasPrefix(result, "fl: error"))
 
 		// List
-		args = []string{"fn", "list", "--namespace", ns}
+		args = []string{"fn", "list", ns}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn1+"\n"+fn2+"\n", result)
 
 		// List and count
-		args = []string{"fn", "list", "--namespace", ns, "--count"}
+		args = []string{"fn", "list", ns, "--count"}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn1+"\n"+fn2+"\nCount: 2\n", result)
 
 		// Delete
-		args = []string{"fn", "delete", fn1, "--namespace", ns}
+		args = []string{"fn", "delete", fn1, ns}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn1+"\n", result)
 
-		args = []string{"fn", "delete", fn2, "--namespace", ns}
+		args = []string{"fn", "delete", fn2, ns}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fn2+"\n", result)
 	})
@@ -141,12 +141,12 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		ns := "ns"
 
 		// List
-		args := []string{"fn", "list", "--namespace", ns}
+		args := []string{"fn", "list", ns}
 		result := cli.RunFLCmd(args...)
 		suite.Equal("\n", result)
 
 		// List and count
-		args = []string{"fn", "list", "--namespace", ns, "--count"}
+		args = []string{"fn", "list", ns, "--count"}
 		result = cli.RunFLCmd(args...)
 		suite.Equal("Count: 0\n", result)
 	})
