@@ -3,7 +3,7 @@ module github.com/funlessdev/fl-testing/e2e-tests
 go 1.19
 
 require (
-	github.com/funlessdev/fl-cli v0.2.2-0.20221119120830-9a68e2c802bc
+	github.com/funlessdev/fl-cli v0.2.2-0.20221121114445-f1d2c5b1559e
 	github.com/stretchr/testify v1.8.1
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/docker/docker v20.10.21+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/funlessdev/fl-client-sdk-go v0.0.0-20221118150323-731027287e8a // indirect
+	github.com/funlessdev/fl-client-sdk-go v0.0.0-20221121091856-94ec50e3ea24 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -35,11 +35,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/tools v0.2.0 // indirect
+	golang.org/x/mod v0.7.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/oauth2 v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
