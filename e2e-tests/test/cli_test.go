@@ -47,7 +47,7 @@ func (suite *SDKTestSuite) SetupSuite() {
 	suite.fnHost = host
 
 	if suite.deploy == true {
-		cli.RunFLCmd("admin", "dev")
+		cli.RunFLCmd("admin", "deploy", "docker", "up")
 		//wait for everything to be up
 		time.Sleep(10 * time.Second)
 	}
@@ -55,7 +55,7 @@ func (suite *SDKTestSuite) SetupSuite() {
 
 func (suite *SDKTestSuite) TearDownSuite() {
 	if suite.deploy == true {
-		cli.RunFLCmd("admin", "reset")
+		cli.RunFLCmd("admin", "deploy", "docker", "down")
 	}
 }
 
