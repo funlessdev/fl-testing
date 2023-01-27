@@ -109,59 +109,9 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fmt.Sprintf("\nSuccessfully deleted function %s/%s.", ns, fn), result)
 	})
-
-	// create and list functions
-	// suite.Run("should successfully list created functions", func() {
-	// 	fn1 := suite.fnName
-	// 	fn2 := suite.fnName + "2"
-
-	// 	// Create
-	// 	args := []string{"fn", "upload", fn1, "../functions/hello.wasm", "--namespace", suite.fnMod}
-	// 	result := cli.RunFLCmd(args...)
-	// 	suite.False(strings.HasPrefix(result, "fl: error"))
-
-	// 	args = []string{"fn", "upload", fn2, "../functions/hello.wasm", "--namespace", suite.fnMod}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.False(strings.HasPrefix(result, "fl: error"))
-
-	// 	// List
-	// 	args = []string{"fn", "list", suite.fnMod}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.Equal(fn2+"\n"+fn1+"\n", result)
-
-	// 	// List and count
-	// 	args = []string{"fn", "list", suite.fnMod, "--count"}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.Equal(fn2+"\n"+fn1+"\nCount: 2\n", result)
-
-	// 	// Delete
-	// 	args = []string{"fn", "delete", fn1, "--namespace", suite.fnMod}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.Equal(fn1+"\n", result)
-
-	// 	args = []string{"fn", "delete", fn2, "--namespace", suite.fnMod}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.Equal(fn2+"\n", result)
-	// })
-
-	// suite.Run("should return an empty list when no functions are found", func() {
-	// 	ns := "ns"
-
-	// 	// List
-	// 	args := []string{"fn", "list", ns}
-	// 	result := cli.RunFLCmd(args...)
-	// 	suite.Equal("", result)
-
-	// 	// List and count
-	// 	args = []string{"fn", "list", ns, "--count"}
-	// 	result = cli.RunFLCmd(args...)
-	// 	suite.Equal("Count: 0\n", result)
-	// })
 	// build function
 	suite.Run("should successfully build function", func() {
 		fn := "built"
-		//TODO: running `fn build` twice in rapid succession raises container naming exceptions (as the previous container has not been removed yet)
-		time.Sleep(2 * time.Second)
 		// Build
 		args := []string{"fn", "build", fn, "../functions/hello_rust", "--language", "rust"}
 		result := cli.RunFLCmd(args...)
