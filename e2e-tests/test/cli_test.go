@@ -62,7 +62,7 @@ func (suite *SDKTestSuite) TearDownSuite() {
 	}
 }
 
-//TODO 1: all 404 errors are rendered as "Not Found" => should be more explicative (issue with either CLI or funless, probably CLI error extraction)
+//BUG 1: all 404 errors are rendered as "Not Found" => should be more explicative (issue with either CLI or funless, probably CLI error extraction)
 
 func (suite *SDKTestSuite) TestOperationsSuccess() {
 	// upload function
@@ -180,7 +180,7 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		args = []string{"mod", "list"}
 		result = cli.RunFLCmd(args...)
 		suite.Equal(fmt.Sprintf("%s\n", suite.fnMod), result)
-		// BUG: see Issue #167 in funless repo
+		// BUG 2: see Issue #167 in funless repo
 		/*
 			args = []string{"mod", "get", suite.fnNewMod}
 			result = cli.RunFLCmd(args...)
@@ -194,7 +194,7 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 	suite.Run("should return an error when invoking a function before creating it", func() {
 		args := []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnMod, "-j", `{"name":"Test"}`}
 		result := cli.RunFLCmd(args...)
-		//NOTE: see TODO no.1
+		//NOTE: see BUG 1
 		// suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 		suite.Equal("fl: error: Not Found", lastLine(result))
 	})
@@ -209,7 +209,7 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		// Invoke the function with a wrong namespace
 		args = []string{"fn", "invoke", suite.fnName, "--namespace", "WRONG", "-j", `{"name":"Test"}`}
 		result = cli.RunFLCmd(args...)
-		//NOTE: see TODO no.1
+		//NOTE: see BUG 1
 		// suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 		suite.Equal("fl: error: Not Found", lastLine(result))
 
@@ -232,7 +232,7 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		// Invoke the function
 		args = []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnMod, "-j", `{"name":"Test"}`}
 		result = cli.RunFLCmd(args...)
-		//NOTE: see TODO no.1
+		//NOTE: see BUG 1
 		// suite.Equal("fl: error: Failed to invoke function: not found in given namespace", lastLine(result))
 		suite.Equal("fl: error: Not Found", lastLine(result))
 	})
@@ -241,18 +241,64 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 	suite.Run("should return an error when deleting a function before creating it", func() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnMod}
 		result := cli.RunFLCmd(args...)
-		//NOTE: see TODO no.1
+		//NOTE: see BUG 1
 		// suite.Equal("fl: error: Failed to delete function: not found", lastLine(result))
 		suite.Equal("fl: error: Not Found", lastLine(result))
 	})
 
-	// create in non-existing module
+	// create in nonexistent module
+	suite.Run("should return an error when creating a function in a nonexistent model", func() {
+		args := []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		//NOTE: see BUG 1
+		suite.Equal("fl: error: Not Found", lastLine(result))
+	})
 
 	// invoke function after module was deleted
+	suite.Run("should return an error when invoking a function after its module was deleted", func() {
+		// create module
+		args := []string{"mod", "create", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
-	// delete non-existing module
+		// create function
+		args = []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNewMod}
+		result = cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
+		// delete module
+		args = []string{"mod", "delete", suite.fnNewMod}
+		result = cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+
+		// invoke function
+		args = []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnNewMod, "-j", `{"name":"Test"}`}
+		result = cli.RunFLCmd(args...)
+		//NOTE: see BUG 1
+		suite.Equal("fl: error: Not Found", result)
+	})
+	// delete nonexistent module
+	suite.Run("should return an error when trying to delete a nonexistent module", func() {
+		args := []string{"mod", "delete", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.Equal("fl: error: Not Found", result)
+	})
 	// create existing module
+	suite.Run("should return an error when trying to create an existing module", func() {
+		args := []string{"mod", "create", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+
+		args = []string{"mod", "create", suite.fnNewMod}
+		result = cli.RunFLCmd(args...)
+		// BUG 3: the error returned when creating an entity that already exists does not have the correct shape (i.e. {"errors": {"details": ...}})
+		suite.True(strings.HasPrefix(lastLine(result), "fl: error"))
+
+		// cleanup
+		args = []string{"mod", "delete", suite.fnNewMod}
+		result = cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+	})
 }
 
 func TestSDKSuite(t *testing.T) {
