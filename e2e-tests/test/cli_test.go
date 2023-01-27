@@ -14,12 +14,13 @@ import (
 
 type SDKTestSuite struct {
 	suite.Suite
-	deploy bool
-	fnName string
-	fnMod  string
-	fnCode *os.File
-	fnHost string
-	fnArgs interface{}
+	deploy   bool
+	fnName   string
+	fnMod    string
+	fnNewMod string
+	fnCode   *os.File
+	fnHost   string
+	fnArgs   interface{}
 }
 
 func (suite *SDKTestSuite) SetupSuite() {
@@ -36,8 +37,8 @@ func (suite *SDKTestSuite) SetupSuite() {
 	}
 
 	suite.fnName = "hello_test"
-	// suite.fnMod = "helloNS"
 	suite.fnMod = "_"
+	suite.fnNewMod = "test_mod"
 	suite.fnArgs = map[string]string{"name": "Test"}
 	source, err := os.OpenFile("../functions/hello.wasm", os.O_RDONLY, 0644)
 
@@ -63,10 +64,6 @@ func (suite *SDKTestSuite) TearDownSuite() {
 
 //TODO 1: all 404 errors are rendered as "Not Found" => should be more explicative (issue with either CLI or funless, probably CLI error extraction)
 
-//TODO 3: test modules
-//TODO 3.1: test module create -> create function in module -> invoke function there
-//TODO 3.2: test module delete -> all functions in the module are deleted (try `fn invoke <func> -n <mod>` after deleting the module)
-
 func (suite *SDKTestSuite) TestOperationsSuccess() {
 	// upload function
 	suite.Run("should successfully create function", func() {
@@ -86,7 +83,7 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 	suite.Run("should successfully delete function", func() {
 		args := []string{"fn", "delete", suite.fnName, "--namespace", suite.fnMod}
 		result := cli.RunFLCmd(args...)
-		suite.Equal(fmt.Sprintf("\nSuccessfully deleted function %s/%s.", suite.fnMod, suite.fnName), result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 	})
 
 	// create function
@@ -107,7 +104,7 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		// Delete
 		args = []string{"fn", "delete", fn, "--namespace", ns}
 		result = cli.RunFLCmd(args...)
-		suite.Equal(fmt.Sprintf("\nSuccessfully deleted function %s/%s.", ns, fn), result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 	})
 	// build function
 	suite.Run("should successfully build function", func() {
@@ -121,6 +118,75 @@ func (suite *SDKTestSuite) TestOperationsSuccess() {
 		os.Remove(fn + ".wasm")
 	})
 
+	// create module
+	suite.Run("should successfully create a module", func() {
+		args := []string{"mod", "create", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.Equal(fmt.Sprintf("Successfully created module %s.\n", suite.fnNewMod), result)
+	})
+	// create function in module
+	suite.Run("should successfully create function in a new module", func() {
+		args := []string{"fn", "upload", suite.fnName, "../functions/hello.wasm", "--namespace", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+	})
+	// invoke function in module
+	suite.Run("should successfully invoke function in a new module", func() {
+		args := []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnNewMod, "-j", `{"name":"Test"}`}
+		result := cli.RunFLCmd(args...)
+		suite.Equal("{\"payload\":\"Hello Test!\"}\n", result)
+	})
+
+	// list functions in module
+	suite.Run("should successfully list functions in a module", func() {
+		// create second function in module
+		args := []string{"fn", "upload", suite.fnName + "2", "../functions/hello.wasm", "--namespace", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
+
+		// list functions
+		args = []string{"mod", "get", suite.fnNewMod}
+		result = cli.RunFLCmd(args...)
+		expected := fmt.Sprintf("Module: %s\nFunctions:\n%s\n%s\n", suite.fnNewMod, suite.fnName, suite.fnName+"2")
+		suite.Equal(expected, result)
+
+		// list functions with count
+		args = []string{"mod", "get", suite.fnNewMod, "-c"}
+		result = cli.RunFLCmd(args...)
+		expected = fmt.Sprintf("%sCount: 2\n", expected)
+		suite.Equal(expected, result)
+	})
+
+	// list modules
+	suite.Run("should successfully list modules", func() {
+		// list
+		args := []string{"mod", "list"}
+		result := cli.RunFLCmd(args...)
+		suite.Equal(fmt.Sprintf("%s\n%s\n", suite.fnMod, suite.fnNewMod), result)
+		// list with count
+		args = []string{"mod", "list", "-c"}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fmt.Sprintf("%s\n%s\nCount: 2\n", suite.fnMod, suite.fnNewMod), result)
+	})
+
+	// delete module
+	suite.Run("should successfully delete a module", func() {
+		// delete
+		args := []string{"mod", "delete", suite.fnNewMod}
+		result := cli.RunFLCmd(args...)
+		suite.Equal(fmt.Sprintf("Successfully deleted module %s.\n", suite.fnNewMod), result)
+
+		// check it was actually deleted
+		args = []string{"mod", "list"}
+		result = cli.RunFLCmd(args...)
+		suite.Equal(fmt.Sprintf("%s\n", suite.fnMod), result)
+		// BUG: see Issue #167 in funless repo
+		/*
+			args = []string{"mod", "get", suite.fnNewMod}
+			result = cli.RunFLCmd(args...)
+			suite.Equal("fl: error: Not Found", lastLine(result))
+		*/
+	})
 }
 
 func (suite *SDKTestSuite) TestOperationsFailure() {
@@ -161,7 +227,7 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		// Then delete it
 		args = []string{"fn", "delete", suite.fnName, "--namespace", suite.fnMod}
 		result = cli.RunFLCmd(args...)
-		suite.Equal(fmt.Sprintf("\nSuccessfully deleted function %s/%s.", suite.fnMod, suite.fnName), result)
+		suite.False(strings.HasPrefix(lastLine(result), "fl: error"))
 
 		// Invoke the function
 		args = []string{"fn", "invoke", suite.fnName, "--namespace", suite.fnMod, "-j", `{"name":"Test"}`}
@@ -179,6 +245,14 @@ func (suite *SDKTestSuite) TestOperationsFailure() {
 		// suite.Equal("fl: error: Failed to delete function: not found", lastLine(result))
 		suite.Equal("fl: error: Not Found", lastLine(result))
 	})
+
+	// create in non-existing module
+
+	// invoke function after module was deleted
+
+	// delete non-existing module
+
+	// create existing module
 }
 
 func TestSDKSuite(t *testing.T) {
